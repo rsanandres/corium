@@ -1,65 +1,58 @@
-# Raphael San Andres - Personal Website
+# JaxStats - League of Legends Stats Analysis (Kubernetes Edition)
 
-A modern, minimalist personal website built with Next.js and Tailwind CSS.
+JaxStats is a Python-based League of Legends stats analysis tool that uses Jax for machine learning-powered performance analysis. This repository is focused on deploying JaxStats as a scalable web service using Kubernetes (KinD or other clusters).
 
 ## Features
 
-- Clean, modern design inspired by Clay.ai
-- Responsive layout for all devices
-- Smooth animations and transitions
-- Sections for experience, education, skills, and projects
-- Easy to maintain and update
+- Riot Games API integration for fetching match data
+- Detailed player statistics analysis
+- Machine learning-powered performance rating using Jax
+- Interactive web interface (FastAPI + Jinja2)
+- Ready for local Kubernetes deployment
 
-## Tech Stack
+## Quick Start (Kubernetes)
 
-- Next.js 14
-- TypeScript
-- Tailwind CSS
-- Framer Motion
-- React Icons
+For a step-by-step guide to running JaxStats locally with Kubernetes and KinD, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
-## Getting Started
+## Project Structure
 
-1. Install Node.js (v18 or later)
-2. Clone this repository
-3. Install dependencies:
+- `app/` - Main application directory
+  - `api/` - Riot Games API client
+  - `analysis/` - Data processing and analysis
+  - `ml/` - Jax-based machine learning models
+  - `static/` - Frontend assets
+  - `templates/` - HTML templates
+  - `main.py` - FastAPI application entry point
+- `k8s-deployment.yaml` - Kubernetes deployment and service manifest
+- `k8s-secret.yaml` - Kubernetes secret manifest for Riot API key
+- `Dockerfile` - Containerization for Kubernetes
+
+## Local Development (Optional)
+
+You can also run JaxStats locally without Kubernetes:
+
+1. Create a virtual environment:
    ```bash
-   npm install
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
-4. Run the development server:
+2. Install dependencies:
    ```bash
-   npm run dev
+   pip install -r requirements.txt
    ```
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-## Building for Production
-
-1. Build the project:
+3. Set up your Riot Games API key in a `.env` file:
+   ```
+   RIOT_API_KEY=your_api_key_here
+   ```
+4. Run the application:
    ```bash
-   npm run build
+   uvicorn app.main:app --reload
    ```
-2. Start the production server:
-   ```bash
-   npm start
-   ```
+5. Open your browser and navigate to `http://localhost:8000`
 
-## Deployment
+## Note
 
-This website can be easily deployed to platforms like:
-- Vercel (recommended)
-- Netlify
-- GitHub Pages
-
-For the best experience, deploy to Vercel:
-1. Push your code to GitHub
-2. Import your repository on Vercel
-3. Deploy
-
-## Customization
-
-- Update content in component files under `src/components/`
-- Modify styles in `src/app/globals.css`
-- Adjust colors and theme in `tailwind.config.ts`
+This application requires a valid Riot Games API key. You can obtain one from the [Riot Games Developer Portal](https://developer.riotgames.com/).
 
 ## License
 
