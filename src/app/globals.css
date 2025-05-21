@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+}
+
+@layer components {
+  .section-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24;
+  }
+  
+  .heading-1 {
+    @apply text-4xl sm:text-5xl font-bold tracking-tight;
+  }
+  
+  .heading-2 {
+    @apply text-3xl sm:text-4xl font-semibold;
+  }
+  
+  .heading-3 {
+    @apply text-2xl sm:text-3xl font-semibold;
+  }
+  
+  .body-text {
+    @apply text-lg text-primary-700;
+  }
+} 
