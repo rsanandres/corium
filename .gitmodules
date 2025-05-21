@@ -1,0 +1,3 @@
+[submodule "jaxstats"]
+	path = jaxstats
+	url = https://github.com/rsanandres/jaxstats.git
