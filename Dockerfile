@@ -49,11 +49,9 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/next.config.js ./
 
-# Create public directory if it doesn't exist
+# Create and copy public directory
 RUN mkdir -p public
-
-# Copy public directory if it exists
-COPY --from=builder /app/public/ ./public/ 2>/dev/null || true
+COPY --from=builder /app/public ./public
 
 # Copy submodule contents if they exist
 COPY --from=builder /app/jaxstats ./jaxstats

@@ -2,9 +2,14 @@
 /node_modules
 /.pnp
 .pnp.js
+package-lock.json
+yarn.lock
 
 # testing
 /coverage
+/test-output
+*.test.js
+*.spec.js
 
 # next.js
 /.next/
@@ -12,18 +17,22 @@
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
 *.pem
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# local env files
-.env*.local
+.pnpm-debug.log*
 
 # vercel
 .vercel
@@ -32,21 +41,44 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# OS/Editor
-.env
+# IDE/Editor
 .idea/
 .vscode/
-Thumbs.db
-ehthumbs.db
 *.swp
 *.sublime-workspace
 *.sublime-project
+Thumbs.db
+ehthumbs.db
 Icon?
 
 # Build/Cache
 .turbo/
 .cache/
-dist/
+.next/
+.nuxt/
+.output/
 
-# Test outputs
-test-output/ 
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Yarn Integrity file
+.yarn-integrity 
