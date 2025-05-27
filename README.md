@@ -1,58 +1,62 @@
-# JaxStats - League of Legends Stats Analysis (Kubernetes Edition)
+# Corium - Kubernetes Deployment Platform
 
-JaxStats is a Python-based League of Legends stats analysis tool that uses Jax for machine learning-powered performance analysis. This repository is focused on deploying JaxStats as a scalable web service using Kubernetes (KinD or other clusters).
+Corium is a modern, TypeScript-based platform for managing and deploying applications to Kubernetes clusters. It provides a streamlined interface for container orchestration and deployment management.
 
 ## Features
 
-- Riot Games API integration for fetching match data
-- Detailed player statistics analysis
-- Machine learning-powered performance rating using Jax
-- Interactive web interface (FastAPI + Jinja2)
-- Ready for local Kubernetes deployment
-
-## Quick Start (Kubernetes)
-
-For a step-by-step guide to running JaxStats locally with Kubernetes and KinD, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+- Modern TypeScript/Node.js architecture
+- Tailwind CSS for beautiful, responsive UI
+- Kubernetes deployment management
+- Container orchestration tools
+- Developer-friendly CLI interface
 
 ## Project Structure
 
-- `app/` - Main application directory
-  - `api/` - Riot Games API client
-  - `analysis/` - Data processing and analysis
-  - `ml/` - Jax-based machine learning models
-  - `static/` - Frontend assets
-  - `templates/` - HTML templates
-  - `main.py` - FastAPI application entry point
-- `k8s-deployment.yaml` - Kubernetes deployment and service manifest
-- `k8s-secret.yaml` - Kubernetes secret manifest for Riot API key
-- `Dockerfile` - Containerization for Kubernetes
+- `src/` - Main source code directory
+- `jaxstats/` - Submodule for JaxStats integration
+- `tailwind.config.ts` - Tailwind CSS configuration
+- `tsconfig.json` - TypeScript configuration
+- `package.json` - Node.js dependencies and scripts
 
-## Local Development (Optional)
+## Quick Start
 
-You can also run JaxStats locally without Kubernetes:
-
-1. Create a virtual environment:
+1. Install dependencies:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   npm install
    ```
+
+2. Set up your development environment:
+   ```bash
+   npm run dev
+   ```
+
+3. For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+## Development
+
+### Prerequisites
+
+- Node.js (latest LTS version)
+- npm or yarn
+- Kubernetes cluster (local or remote)
+
+### Local Development
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/corium.git
+   cd corium
+   ```
+
 2. Install dependencies:
    ```bash
-   pip install -r requirements.txt
+   npm install
    ```
-3. Set up your Riot Games API key in a `.env` file:
-   ```
-   RIOT_API_KEY=your_api_key_here
-   ```
-4. Run the application:
+
+3. Start the development server:
    ```bash
-   uvicorn app.main:app --reload
+   npm run dev
    ```
-5. Open your browser and navigate to `http://localhost:8000`
-
-## Note
-
-This application requires a valid Riot Games API key. You can obtain one from the [Riot Games Developer Portal](https://developer.riotgames.com/).
 
 ## License
 
