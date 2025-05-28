@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: jaxstats-cronjob
+spec:
+  schedule: "0 0 * * *"  # Run every 24 hours at midnight
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 1500
+      template:
+        spec:
+          containers:
+          - name: jaxstats
+            image: jaxstats:latest
+            imagePullPolicy: Never
+            workingDir: /app
+            command: ["/bin/sh", "-c"]
+            args:
+            - |
+              echo "Current directory: $(pwd)"
+              echo "Listing /app directory:"
+              ls -la /app
+              echo "Listing /app/app directory:"
+              ls -la /app/app
+              echo "Listing /app/app/scripts directory:"
+              ls -la /app/app/scripts
+              echo "Running script..."
+              python -m app.scripts.collect_aphae_data
+            env:
+            - name: RIOT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: riot-api-key
+                  key: api-key
+            - name: PYTHONPATH
+              value: /app
+            volumeMounts:
+            - name: data-volume
+              mountPath: /data
+          volumes:
+          - name: data-volume
+            emptyDir: {}
+          restartPolicy: OnFailure 
