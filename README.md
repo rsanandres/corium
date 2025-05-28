@@ -60,4 +60,50 @@ Corium is a modern, TypeScript-based platform for managing and deploying applica
 
 ## License
 
-MIT 
+MIT
+
+## Architectural Diagram
+
+Below is a high-level architectural diagram of the Corium project:
+
+```
++------------------+
+|                  |
+|  Corium          |
+|  (TypeScript)    |
+|                  |
++------------------+
+         |
+         v
++------------------+
+|                  |
+|  JaxStats        |
+|  (Python)        |
+|                  |
++------------------+
+         |
+         v
++------------------+
+|                  |
+|  Kubernetes      |
+|  Deployment      |
+|                  |
++------------------+
+         |
+         v
++------------------+
+|                  |
+|  Ingress         |
+|  Controller      |
+|                  |
++------------------+
+         |
+         v
++------------------+
+|                  |
+|  Local Browser   |
+|                  |
++------------------+
+```
+
+This diagram illustrates the flow from the Corium application to the JaxStats service, which is deployed on Kubernetes and exposed via an ingress controller for local access. 
