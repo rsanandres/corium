@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaxstats
+  labels:
+    app: jaxstats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaxstats
+  template:
+    metadata:
+      labels:
+        app: jaxstats
+    spec:
+      containers:
+        - name: jaxstats
+          image: jaxstats:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_ENV
+              value: "development"
+            - name: DEBUG
+              value: "true"
+            - name: PORT
+              value: "8000"
+            - name: HOST
+              value: "0.0.0.0"
+            - name: RIOT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: riot-api-key
+                  key: api-key
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: riot-api-key
+type: Opaque
+data:
+  api-key: UkdBUEktYWQ1MzQzN2YtZWQ2OS00ZDUzLTkwZTgtMzNmMzVjOGY4ZTgx 

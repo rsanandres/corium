@@ -261,4 +261,66 @@ kubectl apply -f corium-backup.yaml
 
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
 - [KinD Documentation](https://kind.sigs.k8s.io/)
-- [Docker Documentation](https://docs.docker.com/) 
+- [Docker Documentation](https://docs.docker.com/)
+
+## Deploying and Accessing JaxStats
+
+You can manage the JaxStats deployment entirely from the Corium repo. No changes to the JaxStats app/repo are required.
+
+### 1. Build and Load the JaxStats Image (for KinD/local dev)
+
+```bash
+# Build the JaxStats image from the Corium repo (assuming ./jaxstats contains the Dockerfile)
+docker build -t jaxstats:latest ./jaxstats
+
+# Load the image into your KinD cluster
+kind load docker-image jaxstats:latest --name corium-cluster
+```
+
+### 2. Deploy JaxStats to Kubernetes
+
+```bash
+kubectl apply -f k8s/jaxstats-deployment.yaml
+kubectl apply -f k8s/jaxstats-service.yaml
+# (Optional) Expose via Ingress
+kubectl apply -f k8s/jaxstats-ingress.yaml
+```
+
+### 3. Access JaxStats Locally
+
+```bash
+kubectl port-forward service/jaxstats 8000:8000
+```
+Now you can access JaxStats at http://localhost:8000
+
+### 4. (Optional) Access via Ingress
+- Add `127.0.0.1 jaxstats.local` to your /etc/hosts file
+- Visit http://jaxstats.local 
+
+## Updating the RIOT_API_KEY Secret
+
+The RIOT_API_KEY is stored as a Kubernetes secret and needs to be updated daily. To update the secret, follow these steps:
+
+1. **Get your new RIOT API key** from the Riot Developer Portal.
+
+2. **Update the secret in Kubernetes** using the following command:
+
+   ```bash
+   kubectl create secret generic riot-api-key --from-literal=api-key=YOUR_NEW_RIOT_API_KEY --dry-run=client -o yaml | kubectl apply -f -
+   ```
+
+   Replace `YOUR_NEW_RIOT_API_KEY` with your actual new API key.
+
+3. **Restart the JaxStats pod** to apply the changes:
+
+   ```bash
+   kubectl delete pod -l app=jaxstats
+   ```
+
+4. **Verify the update** by checking the logs of the new pod:
+
+   ```bash
+   kubectl logs -f $(kubectl get pods -l app=jaxstats -o jsonpath="{.items[0].metadata.name}")
+   ```
+
+   Ensure that the application starts without any errors related to the `RIOT_API_KEY`. 
