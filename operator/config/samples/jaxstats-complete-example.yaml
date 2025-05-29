@@ -71,13 +71,13 @@ spec:
     - name: "critical-memory-usage"
       metric: "memory_usage"
       operator: ">"
-      threshold: 90.0
+      threshold: "90.0"
       duration: "2m"
       severity: "critical"
     - name: "warning-memory-usage"
       metric: "memory_usage"
       operator: ">"
-      threshold: 75.0
+      threshold: "75.0"
       duration: "5m"
       severity: "warning"
   notifications:
@@ -105,13 +105,13 @@ spec:
     - name: "gpu-utilization-high"
       metric: "gpu_utilization"
       operator: ">"
-      threshold: 95.0
+      threshold: "95.0"
       duration: "5m"
       severity: "warning"
     - name: "gpu-memory-high"
       metric: "gpu_memory_usage"
       operator: ">"
-      threshold: 85.0
+      threshold: "85.0"
       duration: "3m"
       severity: "critical"
   notifications:

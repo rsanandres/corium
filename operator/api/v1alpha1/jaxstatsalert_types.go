@@ -34,8 +34,8 @@ type AlertRule struct {
 	// Operator is the comparison operator (e.g., ">", "<", "==")
 	Operator string `json:"operator"`
 
-	// Threshold is the value to compare against
-	Threshold float64 `json:"threshold"`
+	// Threshold is the value to compare against (as a string)
+	Threshold string `json:"threshold"`
 
 	// Duration is how long the condition must be true before alerting
 	Duration string `json:"duration,omitempty"`
