@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- stats_v1alpha1_jaxstatsconfig.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

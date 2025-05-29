@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - stats.corium.io
+  resources:
+  - jaxstatsconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - stats.corium.io
+  resources:
+  - jaxstatsconfigs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - stats.corium.io
+  resources:
+  - jaxstatsconfigs/status
+  verbs:
+  - get
+  - patch
+  - update
