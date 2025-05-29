@@ -18,13 +18,15 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	statsv1alpha1 "github.com/raph/corium/operator/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // JAXStatsConfigReconciler reconciles a JAXStatsConfig object
@@ -47,11 +49,52 @@ type JAXStatsConfigReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.21.0/pkg/reconcile
 func (r *JAXStatsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = logf.FromContext(ctx)
+	log := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	// Fetch the JAXStatsConfig instance
+	jaxStatsConfig := &statsv1alpha1.JAXStatsConfig{}
+	if err := r.Get(ctx, req.NamespacedName, jaxStatsConfig); err != nil {
+		log.Error(err, "unable to fetch JAXStatsConfig")
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
 
-	return ctrl.Result{}, nil
+	// Update status with current time
+	now := metav1.Now()
+	jaxStatsConfig.Status.LastCollectionTime = &now
+
+	// Set collection status based on enabled flag
+	if jaxStatsConfig.Spec.Enabled {
+		jaxStatsConfig.Status.CollectionStatus = "Active"
+	} else {
+		jaxStatsConfig.Status.CollectionStatus = "Disabled"
+	}
+
+	// Add a condition to track the configuration state
+	condition := metav1.Condition{
+		Type:               "ConfigurationValid",
+		Status:             metav1.ConditionTrue,
+		Reason:             "ConfigurationValid",
+		Message:            "Configuration is valid and being applied",
+		LastTransitionTime: now,
+	}
+
+	// Validate storage configuration
+	if jaxStatsConfig.Spec.StorageConfig.Type == "" {
+		condition.Status = metav1.ConditionFalse
+		condition.Reason = "InvalidStorageConfig"
+		condition.Message = "Storage type is required"
+		jaxStatsConfig.Status.ErrorMessage = "Storage type is required"
+	}
+
+	// Update the status
+	if err := r.Status().Update(ctx, jaxStatsConfig); err != nil {
+		log.Error(err, "unable to update JAXStatsConfig status")
+		return ctrl.Result{}, err
+	}
+
+	// Set up requeue interval based on collection interval
+	requeueAfter := time.Duration(jaxStatsConfig.Spec.CollectionInterval) * time.Second
+	return ctrl.Result{RequeueAfter: requeueAfter}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
