@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/stats.corium.io_jaxstatsconfigs.yaml
+- bases/stats.corium.io_jaxstatscollectors.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

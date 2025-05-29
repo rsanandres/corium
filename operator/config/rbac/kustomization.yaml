@@ -22,6 +22,9 @@ resources:
 # default, aiding admins in cluster management. Those roles are
 # not used by the operator itself. You can comment the following lines
 # if you do not want those helpers be installed with your Project.
+- jaxstatscollector_admin_role.yaml
+- jaxstatscollector_editor_role.yaml
+- jaxstatscollector_viewer_role.yaml
 - jaxstatsconfig_admin_role.yaml
 - jaxstatsconfig_editor_role.yaml
 - jaxstatsconfig_viewer_role.yaml

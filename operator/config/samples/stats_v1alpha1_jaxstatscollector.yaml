@@ -1,0 +1,17 @@
+apiVersion: stats.corium.io/v1alpha1
+kind: JAXStatsCollector
+metadata:
+  name: jaxstats-collector-sample
+spec:
+  targetNamespace: "default"
+  configRef: "jaxstats-sample"
+  metrics:
+    - "memory_usage"
+    - "gpu_utilization"
+  resourceTypes:
+    - "pods"
+    - "deployments"
+  selector:
+    matchLabels:
+      app: jax
+  collectionSchedule: "*/5 * * * *"  # Every 5 minutes
