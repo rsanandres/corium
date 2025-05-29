@@ -12,6 +12,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+
+    - name: List files for debugging
+      run: ls -lR
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
