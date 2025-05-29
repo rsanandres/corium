@@ -1,0 +1,127 @@
+---
+# JAXStatsConfig - Global configuration
+apiVersion: stats.corium.io/v1alpha1
+kind: JAXStatsConfig
+metadata:
+  name: jaxstats-global-config
+  namespace: jaxstats
+spec:
+  enabled: true
+  collectionInterval: 30  # Collect every 30 seconds
+  metrics:
+    - "memory_usage"
+    - "gpu_utilization"
+    - "training_metrics"
+    - "model_performance"
+  storageConfig:
+    type: "prometheus"
+    endpoint: "http://prometheus-server:9090"
+    credentialsSecret: "prometheus-credentials"
+---
+# JAXStatsCollector - Collect stats from training pods
+apiVersion: stats.corium.io/v1alpha1
+kind: JAXStatsCollector
+metadata:
+  name: training-pods-collector
+  namespace: jaxstats
+spec:
+  targetNamespace: "default"
+  configRef: "jaxstats-global-config"
+  metrics:
+    - "memory_usage"
+    - "gpu_utilization"
+    - "training_metrics"
+  resourceTypes:
+    - "pods"
+  selector:
+    matchLabels:
+      app: jax-training
+  collectionSchedule: "*/1 * * * *"  # Every minute
+---
+# JAXStatsCollector - Collect stats from model serving pods
+apiVersion: stats.corium.io/v1alpha1
+kind: JAXStatsCollector
+metadata:
+  name: serving-pods-collector
+  namespace: jaxstats
+spec:
+  targetNamespace: "default"
+  configRef: "jaxstats-global-config"
+  metrics:
+    - "memory_usage"
+    - "model_performance"
+  resourceTypes:
+    - "pods"
+  selector:
+    matchLabels:
+      app: jax-serving
+  collectionSchedule: "*/2 * * * *"  # Every 2 minutes
+---
+# JAXStatsAlert - Alert for high memory usage
+apiVersion: stats.corium.io/v1alpha1
+kind: JAXStatsAlert
+metadata:
+  name: memory-usage-alerts
+  namespace: jaxstats
+spec:
+  enabled: true
+  collectorRef: "training-pods-collector"
+  cooldownPeriod: "5m"
+  rules:
+    - name: "critical-memory-usage"
+      metric: "memory_usage"
+      operator: ">"
+      threshold: 90.0
+      duration: "2m"
+      severity: "critical"
+    - name: "warning-memory-usage"
+      metric: "memory_usage"
+      operator: ">"
+      threshold: 75.0
+      duration: "5m"
+      severity: "warning"
+  notifications:
+    - type: "slack"
+      endpoint: "https://hooks.slack.com/services/xxx/yyy/zzz"
+      template: |
+        🚨 Memory Usage Alert
+        Pod: {{ .PodName }}
+        Current Usage: {{ .Value }}%
+        Threshold: {{ .Threshold }}%
+        Duration: {{ .Duration }}
+        Severity: {{ .Severity }}
+---
+# JAXStatsAlert - Alert for GPU issues
+apiVersion: stats.corium.io/v1alpha1
+kind: JAXStatsAlert
+metadata:
+  name: gpu-usage-alerts
+  namespace: jaxstats
+spec:
+  enabled: true
+  collectorRef: "training-pods-collector"
+  cooldownPeriod: "10m"
+  rules:
+    - name: "gpu-utilization-high"
+      metric: "gpu_utilization"
+      operator: ">"
+      threshold: 95.0
+      duration: "5m"
+      severity: "warning"
+    - name: "gpu-memory-high"
+      metric: "gpu_memory_usage"
+      operator: ">"
+      threshold: 85.0
+      duration: "3m"
+      severity: "critical"
+  notifications:
+    - type: "slack"
+      endpoint: "https://hooks.slack.com/services/xxx/yyy/zzz"
+      template: |
+        🚨 GPU Alert
+        Pod: {{ .PodName }}
+        Metric: {{ .Metric }}
+        Current Value: {{ .Value }}%
+        Threshold: {{ .Threshold }}%
+        Duration: {{ .Duration }}
+        Severity: {{ .Severity }} 
