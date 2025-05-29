@@ -18,7 +18,6 @@ jobs:
       with:
         node-version: '20.19.1'
         cache: 'npm'
-        cache-dependency-path: 'jaxstats/frontend/package-lock.json'  # Adjust this path if needed
 
     - name: Install Dependencies
       run: |
