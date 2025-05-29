@@ -1,9 +1,15 @@
 apiVersion: stats.corium.io/v1alpha1
 kind: JAXStatsConfig
 metadata:
-  labels:
-    app.kubernetes.io/name: operator
-    app.kubernetes.io/managed-by: kustomize
-  name: jaxstatsconfig-sample
+  name: jaxstats-sample
 spec:
-  # TODO(user): Add fields here
+  enabled: true
+  collectionInterval: 60
+  metrics:
+    - "memory_usage"
+    - "gpu_utilization"
+    - "training_metrics"
+  storageConfig:
+    type: "prometheus"
+    endpoint: "http://prometheus-server:9090"
+    credentialsSecret: "prometheus-credentials"
