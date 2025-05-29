@@ -2,4 +2,5 @@
 resources:
 - stats_v1alpha1_jaxstatsconfig.yaml
 - stats_v1alpha1_jaxstatscollector.yaml
+- stats_v1alpha1_jaxstatsalert.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

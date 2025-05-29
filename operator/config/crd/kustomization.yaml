@@ -4,6 +4,7 @@
 resources:
 - bases/stats.corium.io_jaxstatsconfigs.yaml
 - bases/stats.corium.io_jaxstatscollectors.yaml
+- bases/stats.corium.io_jaxstatsalerts.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

@@ -216,6 +216,13 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "JAXStatsCollector")
 		os.Exit(1)
 	}
+	if err := (&controller.JAXStatsAlertReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "JAXStatsAlert")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	if metricsCertWatcher != nil {
