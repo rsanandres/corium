@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.19.1'
+        cache: 'npm'
+        cache-dependency-path: 'jaxstats/frontend/package-lock.json'  # Adjust this path if needed
+
+    - name: Install Dependencies
+      run: |
+        cd jaxstats/frontend
+        npm install
+
+    - name: Build Frontend
+      run: |
+        cd jaxstats/frontend
+        npm run build
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install Python Dependencies
+      run: |
+        cd jaxstats
+        pip install -r requirements.txt
+
+    - name: Run Tests
+      run: |
+        cd jaxstats
+        pytest 
