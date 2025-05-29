@@ -31,6 +31,13 @@ jobs:
           npm install
         fi
 
+    - name: Type Check Frontend (if exists)
+      run: |
+        if [ -d "jaxstats/frontend" ]; then
+          cd jaxstats/frontend
+          npm run type-check
+        fi
+
     - name: Build Frontend (if exists)
       run: |
         if [ -d "jaxstats/frontend" ]; then
