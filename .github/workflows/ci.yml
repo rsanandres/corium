@@ -19,15 +19,19 @@ jobs:
         node-version: '20.19.1'
         cache: 'npm'
 
-    - name: Install Dependencies
+    - name: Install Frontend Dependencies (if exists)
       run: |
-        cd jaxstats/frontend
-        npm install
+        if [ -d "jaxstats/frontend" ]; then
+          cd jaxstats/frontend
+          npm install
+        fi
 
-    - name: Build Frontend
+    - name: Build Frontend (if exists)
       run: |
-        cd jaxstats/frontend
-        npm run build
+        if [ -d "jaxstats/frontend" ]; then
+          cd jaxstats/frontend
+          npm run build
+        fi
 
     - name: Setup Python
       uses: actions/setup-python@v4
