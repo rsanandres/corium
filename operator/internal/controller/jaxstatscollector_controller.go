@@ -50,12 +50,12 @@ type JAXStatsCollectorReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.21.0/pkg/reconcile
 func (r *JAXStatsCollectorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	// Fetch the JAXStatsCollector instance
 	collector := &statsv1alpha1.JAXStatsCollector{}
 	if err := r.Get(ctx, req.NamespacedName, collector); err != nil {
-		log.Error(err, "unable to fetch JAXStatsCollector")
+		logger.Error(err, "unable to fetch JAXStatsCollector")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -65,11 +65,11 @@ func (r *JAXStatsCollectorReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		Namespace: req.Namespace,
 		Name:      collector.Spec.ConfigRef,
 	}, config); err != nil {
-		log.Error(err, "unable to fetch referenced JAXStatsConfig")
+		logger.Error(err, "unable to fetch referenced JAXStatsConfig")
 		collector.Status.ErrorMessage = fmt.Sprintf("Failed to fetch config: %v", err)
 		collector.Status.CollectionStatus = "Error"
 		if err := r.Status().Update(ctx, collector); err != nil {
-			log.Error(err, "unable to update collector status")
+			logger.Error(err, "unable to update collector status")
 		}
 		return ctrl.Result{}, err
 	}
@@ -99,7 +99,7 @@ func (r *JAXStatsCollectorReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// Update the status
 	if err := r.Status().Update(ctx, collector); err != nil {
-		log.Error(err, "unable to update JAXStatsCollector status")
+		logger.Error(err, "unable to update JAXStatsCollector status")
 		return ctrl.Result{}, err
 	}
 

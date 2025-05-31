@@ -29,6 +29,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	CollectionStatusActive   = "Active"
+	CollectionStatusDisabled = "Disabled"
+)
+
 // JAXStatsConfigReconciler reconciles a JAXStatsConfig object
 type JAXStatsConfigReconciler struct {
 	client.Client
@@ -49,12 +54,12 @@ type JAXStatsConfigReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.21.0/pkg/reconcile
 func (r *JAXStatsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	// Fetch the JAXStatsConfig instance
 	jaxStatsConfig := &statsv1alpha1.JAXStatsConfig{}
 	if err := r.Get(ctx, req.NamespacedName, jaxStatsConfig); err != nil {
-		log.Error(err, "unable to fetch JAXStatsConfig")
+		logger.Error(err, "unable to fetch JAXStatsConfig")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -64,9 +69,9 @@ func (r *JAXStatsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// Set collection status based on enabled flag
 	if jaxStatsConfig.Spec.Enabled {
-		jaxStatsConfig.Status.CollectionStatus = "Active"
+		jaxStatsConfig.Status.CollectionStatus = CollectionStatusActive
 	} else {
-		jaxStatsConfig.Status.CollectionStatus = "Disabled"
+		jaxStatsConfig.Status.CollectionStatus = CollectionStatusDisabled
 	}
 
 	// Add a condition to track the configuration state
@@ -88,7 +93,7 @@ func (r *JAXStatsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// Update the status
 	if err := r.Status().Update(ctx, jaxStatsConfig); err != nil {
-		log.Error(err, "unable to update JAXStatsConfig status")
+		logger.Error(err, "unable to update JAXStatsConfig status")
 		return ctrl.Result{}, err
 	}
 

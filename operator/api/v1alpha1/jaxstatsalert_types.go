@@ -95,8 +95,8 @@ type JAXStatsAlertStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // JAXStatsAlert is the Schema for the jaxstatsalerts API
 type JAXStatsAlert struct {
@@ -107,7 +107,7 @@ type JAXStatsAlert struct {
 	Status JAXStatsAlertStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // JAXStatsAlertList contains a list of JAXStatsAlert
 type JAXStatsAlertList struct {

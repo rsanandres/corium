@@ -50,12 +50,12 @@ type JAXStatsAlertReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.21.0/pkg/reconcile
 func (r *JAXStatsAlertReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	// Fetch the JAXStatsAlert instance
 	alert := &statsv1alpha1.JAXStatsAlert{}
 	if err := r.Get(ctx, req.NamespacedName, alert); err != nil {
-		log.Error(err, "unable to fetch JAXStatsAlert")
+		logger.Error(err, "unable to fetch JAXStatsAlert")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -65,11 +65,11 @@ func (r *JAXStatsAlertReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		Namespace: req.Namespace,
 		Name:      alert.Spec.CollectorRef,
 	}, collector); err != nil {
-		log.Error(err, "unable to fetch referenced JAXStatsCollector")
+		logger.Error(err, "unable to fetch referenced JAXStatsCollector")
 		alert.Status.ErrorMessage = fmt.Sprintf("Failed to fetch collector: %v", err)
 		alert.Status.AlertStatus = "Error"
 		if err := r.Status().Update(ctx, alert); err != nil {
-			log.Error(err, "unable to update alert status")
+			logger.Error(err, "unable to update alert status")
 		}
 		return ctrl.Result{}, err
 	}
@@ -110,7 +110,7 @@ func (r *JAXStatsAlertReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// Update the status
 	if err := r.Status().Update(ctx, alert); err != nil {
-		log.Error(err, "unable to update JAXStatsAlert status")
+		logger.Error(err, "unable to update JAXStatsAlert status")
 		return ctrl.Result{}, err
 	}
 
