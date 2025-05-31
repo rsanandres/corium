@@ -96,7 +96,9 @@ spec:
                         "warning", "info")
                       type: string
                     threshold:
-                      description: Threshold is the value to compare against
+                      description: Threshold is the value to compare against (as a
+                        string)
+                      type: string
                   required:
                   - metric
                   - name

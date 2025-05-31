@@ -56,6 +56,19 @@ COPY --from=builder /app/public ./public
 # Copy submodule contents if they exist
 COPY --from=builder /app/jaxstats ./jaxstats
 
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Copy backend code
+COPY . .
+
+# Copy frontend build into static directory
+COPY frontend/build ./app/static/
+
+# Create data directory for replays
+RUN mkdir -p data/replays
+
 # Expose the application port
 EXPOSE 3000
 
