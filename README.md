@@ -1,109 +1,81 @@
-# Corium - Kubernetes Deployment Platform
+# Corium
 
-Corium is a modern, TypeScript-based platform for managing and deploying applications to Kubernetes clusters. It provides a streamlined interface for container orchestration and deployment management.
+Kubernetes operator built with Go and Kubebuilder, managing custom CRDs for automated stats collection, threshold-based alerting, and monitoring — deployed alongside a Next.js dashboard.
 
-## Features
+## Architecture
 
-- Modern TypeScript/Node.js architecture
-- Tailwind CSS for beautiful, responsive UI
-- Kubernetes deployment management
-- Container orchestration tools
-- Developer-friendly CLI interface
+```
+┌─────────────────────────────────────────┐
+│           Kubernetes Cluster            │
+│                                         │
+│  ┌───────────────┐  ┌───────────────┐  │
+│  │   Operator     │  │   Dashboard   │  │
+│  │  (Go/K8s)     │  │   (Next.js)   │  │
+│  └───────┬───────┘  └───────────────┘  │
+│          │                              │
+│  ┌───────▼──────────────────────────┐  │
+│  │       Custom Resources           │  │
+│  │  JAXStatsConfig                  │  │
+│  │  JAXStatsCollector               │  │
+│  │  JAXStatsAlert                   │  │
+│  └──────────────────────────────────┘  │
+└─────────────────────────────────────────┘
+```
+
+## Custom Resource Definitions
+
+API group: `stats.corium.io/v1alpha1`
+
+### JAXStatsConfig
+
+Global configuration for stats collection — enable/disable metrics, set collection intervals, configure storage backends (Prometheus, Elasticsearch).
+
+### JAXStatsCollector
+
+Collects stats from targeted pods via label selectors. Metrics include memory usage, GPU utilization, training metrics, and model performance. Supports cron-based collection schedules.
+
+### JAXStatsAlert
+
+Threshold-based alerting rules linked to collectors. Configurable severity levels, cooldown periods, and notification channels (Slack, email, webhook) with templated messages.
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| Operator | Go 1.24, Kubebuilder v4.6, controller-runtime |
+| Dashboard | Next.js 14, React 18, Tailwind CSS, Framer Motion |
+| CRDs | `stats.corium.io/v1alpha1` |
+| CI | GitHub Actions (lint, unit tests, e2e with KinD) |
+| Deployment | Kustomize, Prometheus ServiceMonitor |
 
 ## Project Structure
 
-- `src/` - Main source code directory
-- `jaxstats/` - Submodule for JaxStats integration
-- `tailwind.config.ts` - Tailwind CSS configuration
-- `tsconfig.json` - TypeScript configuration
-- `package.json` - Node.js dependencies and scripts
+```
+corium/
+├── operator/                # Go Kubernetes operator
+│   ├── api/v1alpha1/        # CRD type definitions
+│   ├── internal/controller/ # Reconciliation controllers
+│   ├── config/              # RBAC, CRDs, Kustomize overlays
+│   └── Makefile
+├── src/                     # Next.js dashboard
+├── k8s/                     # Deployment manifests
+├── jaxstats/                # Stats app (submodule)
+└── .github/workflows/       # CI pipelines
+```
 
 ## Quick Start
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+# Install CRDs
+cd operator && make install
 
-2. Set up your development environment:
-   ```bash
-   npm run dev
-   ```
+# Run the operator locally
+make run
 
-3. For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md)
-
-## Development
-
-### Prerequisites
-
-- Node.js (latest LTS version)
-- npm or yarn
-- Kubernetes cluster (local or remote)
-
-### Local Development
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/corium.git
-   cd corium
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+# Deploy to cluster
+make deploy
+```
 
 ## License
 
 MIT
-
-## Architectural Diagram
-
-Below is a high-level architectural diagram of the Corium project:
-
-```
-+------------------+
-|                  |
-|  Corium          |
-|  (TypeScript)    |
-|                  |
-+------------------+
-         |
-         v
-+------------------+
-|                  |
-|  JaxStats        |
-|  (Python)        |
-|                  |
-+------------------+
-         |
-         v
-+------------------+
-|                  |
-|  Kubernetes      |
-|  Deployment      |
-|                  |
-+------------------+
-         |
-         v
-+------------------+
-|                  |
-|  Ingress         |
-|  Controller      |
-|                  |
-+------------------+
-         |
-         v
-+------------------+
-|                  |
-|  Local Browser   |
-|                  |
-+------------------+
-```
-
-This diagram illustrates the flow from the Corium application to the JaxStats service, which is deployed on Kubernetes and exposed via an ingress controller for local access. 
