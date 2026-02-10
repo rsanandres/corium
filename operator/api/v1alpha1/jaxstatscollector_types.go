@@ -20,21 +20,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // JAXStatsCollectorSpec defines the desired state of JAXStatsCollector.
 type JAXStatsCollectorSpec struct {
 	// TargetNamespace specifies which namespace to collect stats from
+	// +kubebuilder:validation:MinLength=1
 	TargetNamespace string `json:"targetNamespace"`
 
 	// Selector specifies which resources to collect stats from
 	Selector metav1.LabelSelector `json:"selector"`
 
 	// Metrics specifies which metrics to collect
+	// +kubebuilder:validation:MinItems=1
 	Metrics []string `json:"metrics"`
 
 	// ConfigRef references the JAXStatsConfig to use
+	// +kubebuilder:validation:MinLength=1
 	ConfigRef string `json:"configRef"`
 
 	// ResourceTypes specifies which types of resources to collect stats from
@@ -58,12 +58,24 @@ type JAXStatsCollectorStatus struct {
 	// CollectedResources tracks the number of resources being monitored
 	CollectedResources int32 `json:"collectedResources,omitempty"`
 
+	// DiscoveredPods tracks the number of pods discovered by the selector
+	DiscoveredPods int32 `json:"discoveredPods,omitempty"`
+
+	// MetricsConfigMap is the name of the ConfigMap storing collected metrics
+	MetricsConfigMap string `json:"metricsConfigMap,omitempty"`
+
 	// Conditions represent the latest available observations of the collector's current state
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:shortName=jscol
+// +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.collectionStatus`
+// +kubebuilder:printcolumn:name="Pods",type=integer,JSONPath=`.status.discoveredPods`
+// +kubebuilder:printcolumn:name="Config",type=string,JSONPath=`.spec.configRef`
+// +kubebuilder:printcolumn:name="Namespace",type=string,JSONPath=`.spec.targetNamespace`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // JAXStatsCollector is the Schema for the jaxstatscollectors API.
 type JAXStatsCollector struct {

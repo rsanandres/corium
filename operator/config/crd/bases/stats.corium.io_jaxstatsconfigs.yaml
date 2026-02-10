@@ -11,10 +11,25 @@ spec:
     kind: JAXStatsConfig
     listKind: JAXStatsConfigList
     plural: jaxstatsconfigs
+    shortNames:
+    - jsc
     singular: jaxstatsconfig
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.enabled
+      name: Enabled
+      type: boolean
+    - jsonPath: .status.collectionStatus
+      name: Status
+      type: string
+    - jsonPath: .spec.collectionInterval
+      name: Interval
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: JAXStatsConfig is the Schema for the jaxstatsconfigs API.
@@ -40,9 +55,12 @@ spec:
             description: JAXStatsConfigSpec defines the desired state of JAXStatsConfig.
             properties:
               collectionInterval:
+                default: 60
                 description: CollectionInterval specifies how often stats should be
                   collected (in seconds)
                 format: int32
+                maximum: 3600
+                minimum: 10
                 type: integer
               enabled:
                 description: Enabled determines whether JAXStats collection is enabled
@@ -51,6 +69,7 @@ spec:
                 description: Metrics defines which metrics should be collected
                 items:
                   type: string
+                minItems: 1
                 type: array
               storageConfig:
                 description: StorageConfig defines where the stats should be stored
@@ -64,7 +83,11 @@ spec:
                     type: string
                   type:
                     description: Type specifies the type of storage (e.g., "prometheus",
-                      "elasticsearch")
+                      "configmap")
+                    enum:
+                    - prometheus
+                    - configmap
+                    - elasticsearch
                     type: string
                 required:
                 - type
@@ -137,6 +160,11 @@ spec:
                   - type
                   type: object
                 type: array
+              dependentCollectors:
+                description: DependentCollectors tracks the number of Collectors referencing
+                  this Config
+                format: int32
+                type: integer
               errorMessage:
                 description: ErrorMessage contains any error message if collection
                   failed

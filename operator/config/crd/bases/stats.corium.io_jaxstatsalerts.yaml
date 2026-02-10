@@ -11,10 +11,28 @@ spec:
     kind: JAXStatsAlert
     listKind: JAXStatsAlertList
     plural: jaxstatsalerts
+    shortNames:
+    - jsa
     singular: jaxstatsalert
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.enabled
+      name: Enabled
+      type: boolean
+    - jsonPath: .status.alertStatus
+      name: Status
+      type: string
+    - jsonPath: .status.firingAlertsCount
+      name: Firing
+      type: integer
+    - jsonPath: .spec.collectorRef
+      name: Collector
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: JAXStatsAlert is the Schema for the jaxstatsalerts API
@@ -41,10 +59,12 @@ spec:
             properties:
               collectorRef:
                 description: CollectorRef references the JAXStatsCollector to monitor
+                minLength: 1
                 type: string
               cooldownPeriod:
+                default: 5m
                 description: CooldownPeriod is the time to wait before sending another
-                  alert
+                  alert (e.g., "5m", "1h")
                 type: string
               enabled:
                 description: Enabled determines whether the alert is enabled
@@ -65,8 +85,12 @@ spec:
                       description: Template is the notification template to use
                       type: string
                     type:
-                      description: Type is the notification type (e.g., "email", "slack",
+                      description: Type is the notification type (e.g., "event", "slack",
                         "webhook")
+                      enum:
+                      - event
+                      - slack
+                      - webhook
                       type: string
                   required:
                   - type
@@ -83,21 +107,34 @@ spec:
                       type: string
                     metric:
                       description: Metric is the metric to monitor
+                      enum:
+                      - restart_count
+                      - not_ready_count
+                      - container_count
+                      - pod_count
                       type: string
                     name:
                       description: Name is the name of the alert rule
+                      minLength: 1
                       type: string
                     operator:
-                      description: Operator is the comparison operator (e.g., ">",
-                        "<", "==")
+                      description: Operator is the comparison operator
+                      enum:
+                      - '>'
+                      - <
+                      - '>='
+                      - <=
+                      - ==
                       type: string
                     severity:
-                      description: Severity is the alert severity (e.g., "critical",
-                        "warning", "info")
+                      description: Severity is the alert severity
+                      enum:
+                      - critical
+                      - warning
+                      - info
                       type: string
                     threshold:
-                      description: Threshold is the value to compare against (as a
-                        string)
+                      description: Threshold is the value to compare against
                       type: string
                   required:
                   - metric
@@ -106,18 +143,19 @@ spec:
                   - severity
                   - threshold
                   type: object
+                minItems: 1
                 type: array
             required:
             - collectorRef
             - enabled
-            - notifications
             - rules
             type: object
           status:
             description: JAXStatsAlertStatus defines the observed state of JAXStatsAlert.
             properties:
               activeAlerts:
-                description: ActiveAlerts tracks currently active alerts
+                description: ActiveAlerts tracks currently active/firing alert rule
+                  names
                 items:
                   type: string
                 type: array
@@ -185,8 +223,19 @@ spec:
               errorMessage:
                 description: ErrorMessage contains any error message if alerting failed
                 type: string
-              lastAlertTime:
-                description: LastAlertTime is the timestamp of the last alert
+              firingAlertsCount:
+                description: FiringAlertsCount tracks the number of currently firing
+                  alerts
+                format: int32
+                type: integer
+              lastEvaluationTime:
+                description: LastEvaluationTime is the timestamp of the last alert
+                  evaluation
+                format: date-time
+                type: string
+              lastFiredTime:
+                description: LastFiredTime is the timestamp of the last time an alert
+                  fired
                 format: date-time
                 type: string
             type: object

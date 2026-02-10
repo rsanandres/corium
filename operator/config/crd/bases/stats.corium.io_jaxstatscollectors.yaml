@@ -11,10 +11,28 @@ spec:
     kind: JAXStatsCollector
     listKind: JAXStatsCollectorList
     plural: jaxstatscollectors
+    shortNames:
+    - jscol
     singular: jaxstatscollector
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.collectionStatus
+      name: Status
+      type: string
+    - jsonPath: .status.discoveredPods
+      name: Pods
+      type: integer
+    - jsonPath: .spec.configRef
+      name: Config
+      type: string
+    - jsonPath: .spec.targetNamespace
+      name: Namespace
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: JAXStatsCollector is the Schema for the jaxstatscollectors API.
@@ -45,11 +63,13 @@ spec:
                 type: string
               configRef:
                 description: ConfigRef references the JAXStatsConfig to use
+                minLength: 1
                 type: string
               metrics:
                 description: Metrics specifies which metrics to collect
                 items:
                   type: string
+                minItems: 1
                 type: array
               resourceTypes:
                 description: ResourceTypes specifies which types of resources to collect
@@ -106,6 +126,7 @@ spec:
               targetNamespace:
                 description: TargetNamespace specifies which namespace to collect
                   stats from
+                minLength: 1
                 type: string
             required:
             - configRef
@@ -182,6 +203,11 @@ spec:
                   - type
                   type: object
                 type: array
+              discoveredPods:
+                description: DiscoveredPods tracks the number of pods discovered by
+                  the selector
+                format: int32
+                type: integer
               errorMessage:
                 description: ErrorMessage contains any error message if collection
                   failed
@@ -190,6 +216,10 @@ spec:
                 description: LastCollectionTime is the timestamp of the last successful
                   collection
                 format: date-time
+                type: string
+              metricsConfigMap:
+                description: MetricsConfigMap is the name of the ConfigMap storing
+                  collected metrics
                 type: string
             type: object
         type: object

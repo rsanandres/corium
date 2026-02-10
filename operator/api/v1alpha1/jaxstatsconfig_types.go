@@ -20,18 +20,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // JAXStatsConfigSpec defines the desired state of JAXStatsConfig.
 type JAXStatsConfigSpec struct {
 	// Enabled determines whether JAXStats collection is enabled
 	Enabled bool `json:"enabled"`
 
 	// CollectionInterval specifies how often stats should be collected (in seconds)
+	// +kubebuilder:validation:Minimum=10
+	// +kubebuilder:validation:Maximum=3600
+	// +kubebuilder:default=60
 	CollectionInterval int32 `json:"collectionInterval,omitempty"`
 
 	// Metrics defines which metrics should be collected
+	// +kubebuilder:validation:MinItems=1
 	Metrics []string `json:"metrics,omitempty"`
 
 	// StorageConfig defines where the stats should be stored
@@ -40,7 +41,8 @@ type JAXStatsConfigSpec struct {
 
 // StorageConfig defines the storage configuration for JAXStats
 type StorageConfig struct {
-	// Type specifies the type of storage (e.g., "prometheus", "elasticsearch")
+	// Type specifies the type of storage (e.g., "prometheus", "configmap")
+	// +kubebuilder:validation:Enum=prometheus;configmap;elasticsearch
 	Type string `json:"type"`
 
 	// Endpoint is the endpoint URL for the storage backend
@@ -61,12 +63,20 @@ type JAXStatsConfigStatus struct {
 	// ErrorMessage contains any error message if collection failed
 	ErrorMessage string `json:"errorMessage,omitempty"`
 
+	// DependentCollectors tracks the number of Collectors referencing this Config
+	DependentCollectors int32 `json:"dependentCollectors,omitempty"`
+
 	// Conditions represent the latest available observations of the config's current state
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:shortName=jsc
+// +kubebuilder:printcolumn:name="Enabled",type=boolean,JSONPath=`.spec.enabled`
+// +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.collectionStatus`
+// +kubebuilder:printcolumn:name="Interval",type=integer,JSONPath=`.spec.collectionInterval`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // JAXStatsConfig is the Schema for the jaxstatsconfigs API.
 type JAXStatsConfig struct {
