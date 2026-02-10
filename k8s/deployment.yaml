@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: corium
+  namespace: corium-workloads
   labels:
     app: corium
 spec:
@@ -43,4 +44,4 @@ spec:
             path: /
             port: 3000
           initialDelaySeconds: 5
-          periodSeconds: 5 
+          periodSeconds: 5

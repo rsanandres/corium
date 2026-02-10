@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: corium-operator-system
+  labels:
+    name: corium-operator-system
+    app.kubernetes.io/part-of: corium
+    app.kubernetes.io/component: operator
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: corium-workloads
+  labels:
+    name: corium-workloads
+    app.kubernetes.io/part-of: corium
+    app.kubernetes.io/component: workloads
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: corium-monitoring
+  labels:
+    name: corium-monitoring
+    app.kubernetes.io/part-of: corium
+    app.kubernetes.io/component: monitoring

@@ -1,6 +1,9 @@
+# Deprecated: Use namespaces.yaml instead.
+# Kept for backwards compatibility — references the main workload namespace.
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: corium
+  name: corium-workloads
   labels:
-    name: corium 
+    name: corium-workloads
+    app.kubernetes.io/part-of: corium
