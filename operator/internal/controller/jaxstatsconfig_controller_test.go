@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,54 +32,139 @@ import (
 )
 
 var _ = Describe("JAXStatsConfig Controller", func() {
-	Context("When reconciling a resource", func() {
-		const resourceName = "test-resource"
+	const namespace = "default"
 
+	Context("When reconciling a valid enabled config", func() {
+		const resourceName = "test-config-valid"
 		ctx := context.Background()
-
-		typeNamespacedName := types.NamespacedName{
-			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
-		}
-		jaxstatsconfig := &statsv1alpha1.JAXStatsConfig{}
+		namespacedName := types.NamespacedName{Name: resourceName, Namespace: namespace}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind JAXStatsConfig")
-			err := k8sClient.Get(ctx, typeNamespacedName, jaxstatsconfig)
+			resource := &statsv1alpha1.JAXStatsConfig{}
+			err := k8sClient.Get(ctx, namespacedName, resource)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &statsv1alpha1.JAXStatsConfig{
+				resource = &statsv1alpha1.JAXStatsConfig{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
-						Namespace: "default",
+						Namespace: namespace,
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: statsv1alpha1.JAXStatsConfigSpec{
+						Enabled:            true,
+						CollectionInterval: 30,
+						Metrics:            []string{"memory_usage"},
+						StorageConfig: statsv1alpha1.StorageConfig{
+							Type:     "prometheus",
+							Endpoint: "http://prometheus:9090",
+						},
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
 			resource := &statsv1alpha1.JAXStatsConfig{}
-			err := k8sClient.Get(ctx, typeNamespacedName, resource)
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Cleanup the specific resource instance JAXStatsConfig")
-			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			err := k8sClient.Get(ctx, namespacedName, resource)
+			if err == nil {
+				resource.Finalizers = nil
+				Expect(k8sClient.Update(ctx, resource)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			}
 		})
-		It("should successfully reconcile the resource", func() {
-			By("Reconciling the created resource")
-			controllerReconciler := &JAXStatsConfigReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
+
+		It("should set status to Active and add finalizer", func() {
+			reconciler := &JAXStatsConfigReconciler{
+				Client:   k8sClient,
+				Scheme:   k8sClient.Scheme(),
+				Recorder: record.NewFakeRecorder(10),
 			}
 
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: typeNamespacedName,
-			})
+			result, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: namespacedName})
 			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
+			Expect(result.RequeueAfter).To(BeNumerically(">", 0))
+
+			// Reconcile again (finalizer was just added, now real logic runs)
+			result, err = reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: namespacedName})
+			Expect(err).NotTo(HaveOccurred())
+
+			updated := &statsv1alpha1.JAXStatsConfig{}
+			Expect(k8sClient.Get(ctx, namespacedName, updated)).To(Succeed())
+			Expect(updated.Status.CollectionStatus).To(Equal("Active"))
+			Expect(updated.Finalizers).To(ContainElement(configFinalizerName))
+		})
+	})
+
+	Context("When reconciling a disabled config", func() {
+		const resourceName = "test-config-disabled"
+		ctx := context.Background()
+		namespacedName := types.NamespacedName{Name: resourceName, Namespace: namespace}
+
+		BeforeEach(func() {
+			resource := &statsv1alpha1.JAXStatsConfig{}
+			err := k8sClient.Get(ctx, namespacedName, resource)
+			if err != nil && errors.IsNotFound(err) {
+				resource = &statsv1alpha1.JAXStatsConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      resourceName,
+						Namespace: namespace,
+					},
+					Spec: statsv1alpha1.JAXStatsConfigSpec{
+						Enabled:            false,
+						CollectionInterval: 60,
+						StorageConfig: statsv1alpha1.StorageConfig{
+							Type: "configmap",
+						},
+					},
+				}
+				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+			}
+		})
+
+		AfterEach(func() {
+			resource := &statsv1alpha1.JAXStatsConfig{}
+			err := k8sClient.Get(ctx, namespacedName, resource)
+			if err == nil {
+				resource.Finalizers = nil
+				Expect(k8sClient.Update(ctx, resource)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			}
+		})
+
+		It("should set status to Disabled", func() {
+			reconciler := &JAXStatsConfigReconciler{
+				Client:   k8sClient,
+				Scheme:   k8sClient.Scheme(),
+				Recorder: record.NewFakeRecorder(10),
+			}
+
+			// First reconcile adds finalizer
+			reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: namespacedName})
+			// Second reconcile runs main logic
+			_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: namespacedName})
+			Expect(err).NotTo(HaveOccurred())
+
+			updated := &statsv1alpha1.JAXStatsConfig{}
+			Expect(k8sClient.Get(ctx, namespacedName, updated)).To(Succeed())
+			Expect(updated.Status.CollectionStatus).To(Equal("Disabled"))
+		})
+	})
+
+	Context("When creating a config with invalid storage type", func() {
+		It("should be rejected by API validation", func() {
+			resource := &statsv1alpha1.JAXStatsConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-config-invalid-storage",
+					Namespace: namespace,
+				},
+				Spec: statsv1alpha1.JAXStatsConfigSpec{
+					Enabled:            true,
+					CollectionInterval: 60,
+					StorageConfig:      statsv1alpha1.StorageConfig{},
+				},
+			}
+			err := k8sClient.Create(context.Background(), resource)
+			Expect(err).To(HaveOccurred())
+			Expect(errors.IsInvalid(err)).To(BeTrue())
 		})
 	})
 })
