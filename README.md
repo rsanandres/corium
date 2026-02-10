@@ -59,7 +59,6 @@ corium/
 │   └── Makefile
 ├── src/                     # Next.js dashboard
 ├── k8s/                     # Deployment manifests
-├── jaxstats/                # Stats app (submodule)
 └── .github/workflows/       # CI pipelines
 ```
 

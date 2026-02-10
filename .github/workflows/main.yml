@@ -12,8 +12,6 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
-      with:
-        submodules: true
     
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -39,8 +37,6 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
-      with:
-        submodules: true
     
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -73,8 +69,6 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
-      with:
-        submodules: true
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
