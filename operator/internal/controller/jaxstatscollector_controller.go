@@ -21,98 +21,228 @@ import (
 	"fmt"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	statsv1alpha1 "github.com/raph/corium/operator/api/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // JAXStatsCollectorReconciler reconciles a JAXStatsCollector object
 type JAXStatsCollectorReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=stats.corium.io,resources=jaxstatscollectors,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=stats.corium.io,resources=jaxstatscollectors/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=stats.corium.io,resources=jaxstatscollectors/finalizers,verbs=update
+// +kubebuilder:rbac:groups=stats.corium.io,resources=jaxstatsconfigs,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the JAXStatsCollector object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.21.0/pkg/reconcile
 func (r *JAXStatsCollectorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	// Fetch the JAXStatsCollector instance
 	collector := &statsv1alpha1.JAXStatsCollector{}
 	if err := r.Get(ctx, req.NamespacedName, collector); err != nil {
-		logger.Error(err, "unable to fetch JAXStatsCollector")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// Fetch the referenced JAXStatsConfig
 	config := &statsv1alpha1.JAXStatsConfig{}
-	if err := r.Get(ctx, client.ObjectKey{
+	if err := r.Get(ctx, types.NamespacedName{
 		Namespace: req.Namespace,
 		Name:      collector.Spec.ConfigRef,
 	}, config); err != nil {
-		logger.Error(err, "unable to fetch referenced JAXStatsConfig")
-		collector.Status.ErrorMessage = fmt.Sprintf("Failed to fetch config: %v", err)
+		reconcileErrorsTotal.WithLabelValues("collector").Inc()
+		collector.Status.ErrorMessage = fmt.Sprintf("config %q not found: %v", collector.Spec.ConfigRef, err)
 		collector.Status.CollectionStatus = "Error"
-		if err := r.Status().Update(ctx, collector); err != nil {
-			logger.Error(err, "unable to update collector status")
+		meta.SetStatusCondition(&collector.Status.Conditions, metav1.Condition{
+			Type:               "ConfigAvailable",
+			Status:             metav1.ConditionFalse,
+			Reason:             "ConfigNotFound",
+			Message:            collector.Status.ErrorMessage,
+			LastTransitionTime: metav1.Now(),
+			ObservedGeneration: collector.Generation,
+		})
+		if updateErr := r.Status().Update(ctx, collector); updateErr != nil {
+			logger.Error(updateErr, "unable to update collector status")
 		}
-		return ctrl.Result{}, err
-	}
-
-	// Update status
-	now := metav1.Now()
-	collector.Status.LastCollectionTime = &now
-
-	// Validate collector configuration
-	condition := metav1.Condition{
-		Type:               "CollectorValid",
-		Status:             metav1.ConditionTrue,
-		Reason:             "CollectorValid",
-		Message:            "Collector configuration is valid",
-		LastTransitionTime: now,
+		r.Recorder.Event(collector, "Warning", "ConfigNotFound", collector.Status.ErrorMessage)
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
 	// Check if config is enabled
 	if !config.Spec.Enabled {
-		condition.Status = metav1.ConditionFalse
-		condition.Reason = "ConfigDisabled"
-		condition.Message = "Referenced JAXStatsConfig is disabled"
 		collector.Status.CollectionStatus = "Disabled"
-	} else {
-		collector.Status.CollectionStatus = "Active"
+		collector.Status.ErrorMessage = ""
+		meta.SetStatusCondition(&collector.Status.Conditions, metav1.Condition{
+			Type:               "ConfigAvailable",
+			Status:             metav1.ConditionFalse,
+			Reason:             "ConfigDisabled",
+			Message:            "Referenced JAXStatsConfig is disabled",
+			LastTransitionTime: metav1.Now(),
+			ObservedGeneration: collector.Generation,
+		})
+		if err := r.Status().Update(ctx, collector); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
 	}
 
-	// Update the status
+	meta.SetStatusCondition(&collector.Status.Conditions, metav1.Condition{
+		Type:               "ConfigAvailable",
+		Status:             metav1.ConditionTrue,
+		Reason:             "ConfigReady",
+		Message:            "Referenced JAXStatsConfig is available and enabled",
+		LastTransitionTime: metav1.Now(),
+		ObservedGeneration: collector.Generation,
+	})
+
+	// Discover pods by label selector
+	selector, err := metav1.LabelSelectorAsSelector(&collector.Spec.Selector)
+	if err != nil {
+		reconcileErrorsTotal.WithLabelValues("collector").Inc()
+		collector.Status.ErrorMessage = fmt.Sprintf("invalid label selector: %v", err)
+		collector.Status.CollectionStatus = "Error"
+		r.Status().Update(ctx, collector)
+		return ctrl.Result{}, err
+	}
+
+	podList := &corev1.PodList{}
+	listOpts := &client.ListOptions{
+		LabelSelector: selector,
+		Namespace:     collector.Spec.TargetNamespace,
+	}
+	if err := r.List(ctx, podList, listOpts); err != nil {
+		reconcileErrorsTotal.WithLabelValues("collector").Inc()
+		logger.Error(err, "unable to list pods", "namespace", collector.Spec.TargetNamespace, "selector", selector.String())
+		collector.Status.ErrorMessage = fmt.Sprintf("failed to list pods: %v", err)
+		collector.Status.CollectionStatus = "Error"
+		r.Status().Update(ctx, collector)
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	}
+
+	// Collect metrics from discovered pods
+	podMetrics := CollectPodMetrics(podList.Items)
+	collectedMetrics := BuildCollectedMetrics(collector.Name, collector.Spec.TargetNamespace, podMetrics)
+
+	metricsJSON, err := MarshalMetrics(collectedMetrics)
+	if err != nil {
+		reconcileErrorsTotal.WithLabelValues("collector").Inc()
+		return ctrl.Result{}, fmt.Errorf("failed to marshal metrics: %w", err)
+	}
+
+	// Create or update the metrics ConfigMap
+	cmName := collector.Name + "-metrics"
+	if err := r.ensureMetricsConfigMap(ctx, collector, cmName, metricsJSON); err != nil {
+		reconcileErrorsTotal.WithLabelValues("collector").Inc()
+		logger.Error(err, "unable to ensure metrics ConfigMap")
+		collector.Status.ErrorMessage = fmt.Sprintf("failed to manage ConfigMap: %v", err)
+		collector.Status.CollectionStatus = "Error"
+		r.Status().Update(ctx, collector)
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	}
+
+	// Update status
+	now := metav1.Now()
+	podCount := int32(len(podList.Items))
+	collector.Status.LastCollectionTime = &now
+	collector.Status.CollectionStatus = "Active"
+	collector.Status.DiscoveredPods = podCount
+	collector.Status.CollectedResources = podCount
+	collector.Status.MetricsConfigMap = cmName
+	collector.Status.ErrorMessage = ""
+
+	meta.SetStatusCondition(&collector.Status.Conditions, metav1.Condition{
+		Type:               "Ready",
+		Status:             metav1.ConditionTrue,
+		Reason:             "CollectionSuccessful",
+		Message:            fmt.Sprintf("Discovered %d pods, metrics stored in ConfigMap %s", podCount, cmName),
+		LastTransitionTime: now,
+		ObservedGeneration: collector.Generation,
+	})
+
 	if err := r.Status().Update(ctx, collector); err != nil {
 		logger.Error(err, "unable to update JAXStatsCollector status")
 		return ctrl.Result{}, err
 	}
 
-	// Calculate next reconciliation time based on collection schedule
-	// For now, we'll use a simple 5-minute interval
-	requeueAfter := 5 * time.Minute
+	// Update Prometheus metric
+	discoveredPodsGauge.WithLabelValues(collector.Name).Set(float64(podCount))
+
+	logger.Info("collection complete", "pods", podCount, "configmap", cmName)
+
+	requeueAfter := time.Duration(config.Spec.CollectionInterval) * time.Second
+	if requeueAfter == 0 {
+		requeueAfter = 60 * time.Second
+	}
 	return ctrl.Result{RequeueAfter: requeueAfter}, nil
+}
+
+func (r *JAXStatsCollectorReconciler) ensureMetricsConfigMap(
+	ctx context.Context,
+	collector *statsv1alpha1.JAXStatsCollector,
+	cmName string,
+	metricsJSON string,
+) error {
+	cm := &corev1.ConfigMap{}
+	err := r.Get(ctx, types.NamespacedName{
+		Namespace: collector.Namespace,
+		Name:      cmName,
+	}, cm)
+
+	if errors.IsNotFound(err) {
+		cm = &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cmName,
+				Namespace: collector.Namespace,
+				Labels: map[string]string{
+					"app.kubernetes.io/managed-by": "jaxstats-operator",
+					"stats.corium.io/collector":    collector.Name,
+				},
+			},
+			Data: map[string]string{
+				"metrics.json": metricsJSON,
+			},
+		}
+		if err := controllerutil.SetControllerReference(collector, cm, r.Scheme); err != nil {
+			return fmt.Errorf("failed to set owner reference: %w", err)
+		}
+		if err := r.Create(ctx, cm); err != nil {
+			return fmt.Errorf("failed to create ConfigMap: %w", err)
+		}
+		r.Recorder.Event(collector, "Normal", "ConfigMapCreated", fmt.Sprintf("Created metrics ConfigMap %s", cmName))
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	// Update existing ConfigMap
+	cm.Data["metrics.json"] = metricsJSON
+	if err := r.Update(ctx, cm); err != nil {
+		return fmt.Errorf("failed to update ConfigMap: %w", err)
+	}
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *JAXStatsCollectorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&statsv1alpha1.JAXStatsCollector{}).
+		Owns(&corev1.ConfigMap{}).
 		Named("jaxstatscollector").
 		Complete(r)
 }
