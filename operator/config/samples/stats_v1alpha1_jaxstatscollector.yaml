@@ -1,17 +1,16 @@
 apiVersion: stats.corium.io/v1alpha1
 kind: JAXStatsCollector
 metadata:
-  name: jaxstats-collector-sample
+  name: demo-collector
 spec:
   targetNamespace: "default"
   configRef: "jaxstats-sample"
   metrics:
-    - "memory_usage"
-    - "gpu_utilization"
+    - "restart_count"
+    - "not_ready_count"
   resourceTypes:
     - "pods"
-    - "deployments"
   selector:
     matchLabels:
-      app: jax
-  collectionSchedule: "*/5 * * * *"  # Every 5 minutes
+      app: demo-workload
+  collectionSchedule: "*/1 * * * *"

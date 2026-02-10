@@ -1,31 +1,21 @@
 apiVersion: stats.corium.io/v1alpha1
 kind: JAXStatsAlert
 metadata:
-  name: jaxstats-alert-sample
+  name: demo-alert
 spec:
   enabled: true
-  collectorRef: "jaxstats-collector-sample"
-  cooldownPeriod: "5m"
+  collectorRef: "demo-collector"
+  cooldownPeriod: "2m"
   rules:
-    - name: "high-memory-usage"
-      metric: "memory_usage"
+    - name: "high-restarts"
+      metric: "restart_count"
       operator: ">"
-      threshold: 85.0
-      duration: "5m"
+      threshold: "5"
       severity: "warning"
-    - name: "critical-gpu-usage"
-      metric: "gpu_utilization"
+    - name: "pods-not-ready"
+      metric: "not_ready_count"
       operator: ">"
-      threshold: 95.0
-      duration: "2m"
+      threshold: "0"
       severity: "critical"
   notifications:
-    - type: "slack"
-      endpoint: "https://hooks.slack.com/services/xxx/yyy/zzz"
-      template: |
-        Alert: {{ .AlertName }}
-        Severity: {{ .Severity }}
-        Metric: {{ .Metric }}
-        Current Value: {{ .Value }}
-        Threshold: {{ .Threshold }}
-        Duration: {{ .Duration }}
+    - type: "event"

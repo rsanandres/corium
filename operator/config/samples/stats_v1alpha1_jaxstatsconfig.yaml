@@ -4,12 +4,10 @@ metadata:
   name: jaxstats-sample
 spec:
   enabled: true
-  collectionInterval: 60
+  collectionInterval: 30
   metrics:
-    - "memory_usage"
-    - "gpu_utilization"
-    - "training_metrics"
+    - "restart_count"
+    - "not_ready_count"
+    - "pod_count"
   storageConfig:
-    type: "prometheus"
-    endpoint: "http://prometheus-server:9090"
-    credentialsSecret: "prometheus-credentials"
+    type: "configmap"
