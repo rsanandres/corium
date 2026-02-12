@@ -4,51 +4,68 @@ Kubernetes operator built with Go and Kubebuilder, managing custom CRDs for auto
 
 ## Architecture
 
-```mermaid
-flowchart TB
-    subgraph K8s["Kubernetes Cluster"]
-        subgraph ONS["corium-operator-system"]
-            OP[Operator\nGo / controller-runtime]
-        end
-
-        subgraph WNS["corium-workloads"]
-            DASH[Next.js Dashboard]
-            WP[Target Pods]
-        end
-
-        subgraph MNS["corium-monitoring"]
-            PROM[Prometheus]
-            GRAF[Grafana]
-        end
-
-        CFG[JAXStatsConfig]
-        COL[JAXStatsCollector]
-        ALT[JAXStatsAlert]
-        CM[ConfigMap\nmetrics.json]
-        EV[K8s Events]
-    end
-
-    OP -->|reconciles| CFG & COL & ALT
-    COL -->|discovers pods via selectors| WP
-    COL -->|persists metrics| CM
-    ALT -->|evaluates rules from| CM
-    ALT -->|emits firing/resolved| EV
-    PROM -->|scrapes /metrics| OP
-    GRAF -->|dashboards| PROM
-
-    style ONS fill:#1a1a2e,color:#fff
-    style WNS fill:#16213e,color:#fff
-    style MNS fill:#0f3460,color:#fff
 ```
-
-### CRD Hierarchy
-
-```
-JAXStatsConfig ──referenced by──> JAXStatsCollector ──referenced by──> JAXStatsAlert
-                                        │                                    │
-                                        ▼                                    ▼
-                                    ConfigMap                           K8s Events
-                                  (pod metrics)                    (alert notifications)
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                            Kubernetes Cluster                                │
+│                                                                              │
+│  ┌──────────────── corium-operator-system ─────────────────────────────────┐ │
+│  │                                                                          │ │
+│  │  ┌──────────────── Operator Controller Manager ───────────────────────┐ │ │
+│  │  │                                                                     │ │ │
+│  │  │  ┌──────────────┐  ┌─────────────────┐  ┌────────────────────┐   │ │ │
+│  │  │  │    Config     │  │    Collector     │  │      Alert         │   │ │ │
+│  │  │  │  Controller   │  │   Controller     │  │    Controller      │   │ │ │
+│  │  │  └──────┬────────┘  └────────┬─────────┘  └─────────┬─────────┘   │ │ │
+│  │  │         │ reconciles         │ reconciles            │ reconciles  │ │ │
+│  │  │         ▼                    ▼                       ▼             │ │ │
+│  │  │  ┌──────────────┐  ┌─────────────────┐  ┌────────────────────┐   │ │ │
+│  │  │  │JAXStatsConfig│◄─│JAXStatsCollector │◄─│  JAXStatsAlert     │   │ │ │
+│  │  │  │    (CRD)     │  │     (CRD)        │  │     (CRD)         │   │ │ │
+│  │  │  │              │  │                   │  │                    │   │ │ │
+│  │  │  │ • interval   │  │ • targetNamespace │  │ • rules[]         │   │ │ │
+│  │  │  │ • metrics[]  │  │ • selector        │  │   metric/op/thold │   │ │ │
+│  │  │  │ • storage    │  │ • configRef ──────┘  │ • collectorRef ───┘   │ │ │
+│  │  │  └──────────────┘  └────────┬──────────┘  │ • cooldown           │ │ │
+│  │  │                             │              └─────────┬────────────┘ │ │
+│  │  │                             │ writes                 │ evaluates    │ │ │
+│  │  │                   ┌─────────▼──────────┐   ┌────────▼──────────┐  │ │ │
+│  │  │                   │    ConfigMap        │──▶│   K8s Events      │  │ │ │
+│  │  │                   │  {name}-metrics     │   │ AlertFiring       │  │ │ │
+│  │  │                   │  (metrics.json)     │   │ AlertResolved     │  │ │ │
+│  │  │                   └────────────────────┘   └───────────────────┘  │ │ │
+│  │  │                                                                     │ │ │
+│  │  │  Prometheus Metrics (:8443)                                        │ │ │
+│  │  │  • jaxstats_discovered_pods  • jaxstats_active_alerts              │ │ │
+│  │  │  • jaxstats_reconcile_errors_total                                 │ │ │
+│  │  └─────────────────────────────────┬───────────────────────────────────┘ │ │
+│  └────────────────────────────────────┼────────────────────────────────────┘ │
+│                                       │ scrapes                              │
+│  ┌──────────────── corium-monitoring ─┼────────────────────────────────────┐ │
+│  │                                    │                                     │ │
+│  │  ┌───────────────────┐  ┌─────────▼──────────┐                        │ │
+│  │  │      Grafana       │◄─│    Prometheus       │                        │ │
+│  │  │                    │  │                      │                        │ │
+│  │  │ • Discovered Pods  │  │ • ServiceMonitor     │                        │ │
+│  │  │ • Active Alerts    │  │ • 60s scrape         │                        │ │
+│  │  │ • Reconcile Errors │  └──────────────────────┘                        │ │
+│  │  └───────────────────┘                                                   │ │
+│  └──────────────────────────────────────────────────────────────────────────┘ │
+│                                                                              │
+│  ┌──────────────── corium-workloads ────────────────────────────────────────┐ │
+│  │                                                                           │ │
+│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐         ┌──────────────────┐    │ │
+│  │  │  Pod 1   │  │  Pod 2   │  │  Pod 3   │  ...    │  Next.js Dash   │    │ │
+│  │  │ app:demo │  │ app:demo │  │ app:demo │         │  (3 replicas)   │    │ │
+│  │  └─────────┘  └─────────┘  └─────────┘         └──────────────────┘    │ │
+│  │       ▲              ▲             ▲                                      │ │
+│  │       └──────────────┼─────────────┘                                     │ │
+│  │            Collector discovers pods via label selector                    │ │
+│  └───────────────────────────────────────────────────────────────────────────┘ │
+│                                                                              │
+│  NetworkPolicies: default-deny per namespace + explicit allows               │
+│  • monitoring → operator :8443  • grafana → prometheus :9090                │
+│  • intra-workloads allowed                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Custom Resource Definitions
