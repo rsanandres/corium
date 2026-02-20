@@ -1,0 +1,63 @@
+---
+# CoriumMonitorConfig - Global configuration
+apiVersion: monitor.corium.io/v1alpha1
+kind: CoriumMonitorConfig
+metadata:
+  name: production-config
+spec:
+  enabled: true
+  collectionInterval: 30
+  metrics:
+    - "restart_count"
+    - "not_ready_count"
+    - "pod_count"
+    - "container_count"
+  storageConfig:
+    type: "configmap"
+---
+# CoriumMonitorCollector - Monitor workload pods
+apiVersion: monitor.corium.io/v1alpha1
+kind: CoriumMonitorCollector
+metadata:
+  name: workload-collector
+spec:
+  targetNamespace: "corium-workloads"
+  configRef: "production-config"
+  metrics:
+    - "restart_count"
+    - "not_ready_count"
+    - "pod_count"
+  resourceTypes:
+    - "pods"
+  selector:
+    matchLabels:
+      app: corium
+  collectionSchedule: "*/1 * * * *"
+---
+# CoriumMonitorAlert - Alert on pod health issues
+apiVersion: monitor.corium.io/v1alpha1
+kind: CoriumMonitorAlert
+metadata:
+  name: workload-alerts
+spec:
+  enabled: true
+  collectorRef: "workload-collector"
+  cooldownPeriod: "5m"
+  rules:
+    - name: "high-restart-count"
+      metric: "restart_count"
+      operator: ">"
+      threshold: "5"
+      severity: "warning"
+    - name: "pods-not-ready"
+      metric: "not_ready_count"
+      operator: ">"
+      threshold: "0"
+      severity: "critical"
+    - name: "too-few-pods"
+      metric: "pod_count"
+      operator: "<"
+      threshold: "2"
+      severity: "warning"
+  notifications:
+    - type: "event"

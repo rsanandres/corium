@@ -37,7 +37,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	statsv1alpha1 "github.com/raph/corium/operator/api/v1alpha1"
+	monitorv1alpha1 "github.com/raph/corium/operator/api/v1alpha1"
 	"github.com/raph/corium/operator/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
@@ -50,7 +50,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(statsv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(monitorv1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -202,28 +202,28 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := (&controller.JAXStatsConfigReconciler{
+	if err := (&controller.CoriumMonitorConfigReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("jaxstatsconfig-controller"),
+		Recorder: mgr.GetEventRecorderFor("coriummonitorconfig-controller"),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "JAXStatsConfig")
+		setupLog.Error(err, "unable to create controller", "controller", "CoriumMonitorConfig")
 		os.Exit(1)
 	}
-	if err := (&controller.JAXStatsCollectorReconciler{
+	if err := (&controller.CoriumMonitorCollectorReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("jaxstatscollector-controller"),
+		Recorder: mgr.GetEventRecorderFor("coriummonitorcollector-controller"),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "JAXStatsCollector")
+		setupLog.Error(err, "unable to create controller", "controller", "CoriumMonitorCollector")
 		os.Exit(1)
 	}
-	if err := (&controller.JAXStatsAlertReconciler{
+	if err := (&controller.CoriumMonitorAlertReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("jaxstatsalert-controller"),
+		Recorder: mgr.GetEventRecorderFor("coriummonitoralert-controller"),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "JAXStatsAlert")
+		setupLog.Error(err, "unable to create controller", "controller", "CoriumMonitorAlert")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

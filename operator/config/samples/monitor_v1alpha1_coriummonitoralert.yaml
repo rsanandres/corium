@@ -1,0 +1,21 @@
+apiVersion: monitor.corium.io/v1alpha1
+kind: CoriumMonitorAlert
+metadata:
+  name: demo-alert
+spec:
+  enabled: true
+  collectorRef: "demo-collector"
+  cooldownPeriod: "2m"
+  rules:
+    - name: "high-restarts"
+      metric: "restart_count"
+      operator: ">"
+      threshold: "5"
+      severity: "warning"
+    - name: "pods-not-ready"
+      metric: "not_ready_count"
+      operator: ">"
+      threshold: "0"
+      severity: "critical"
+  notifications:
+    - type: "event"

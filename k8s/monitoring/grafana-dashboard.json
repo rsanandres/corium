@@ -1,8 +1,18 @@
 {
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
   },
-  "description": "Corium Operator - JAXStats Controller Metrics",
+  "description": "Corium Operator — Real-time monitoring of CoriumMonitor CRD controllers, pod discovery, alert evaluation, and reconciliation performance",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -10,135 +20,344 @@
   "links": [],
   "panels": [
     {
-      "title": "Reconciliation Errors by Controller",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Overview",
+      "type": "row"
+    },
+    {
+      "title": "Discovered Pods",
+      "description": "Total pods currently discovered across all CoriumMonitorCollectors",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(corium_discovered_pods)", "legendFormat": "Total Pods" }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "#FF4444", "value": 0 },
+              { "color": "#FFAA00", "value": 1 },
+              { "color": "#73BF69", "value": 3 }
+            ]
+          },
+          "mappings": [{ "type": "special", "options": { "match": "null", "result": { "text": "No data", "color": "#888" } } }]
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "area", "colorMode": "background", "textMode": "auto", "orientation": "auto" }
+    },
+    {
+      "title": "Active Alerts",
+      "description": "Total currently firing alerts across all CoriumMonitorAlert resources",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(corium_active_alerts)", "legendFormat": "Firing" }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "#73BF69", "value": 0 },
+              { "color": "#FFAA00", "value": 1 },
+              { "color": "#FF4444", "value": 3 }
+            ]
+          }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "area", "colorMode": "background", "textMode": "auto" }
+    },
+    {
+      "title": "Reconciliation Rate",
+      "description": "Total reconciliations per second across all controllers",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(controller_runtime_reconcile_total{namespace=\"operator-system\"}[5m]))", "legendFormat": "reconciles/s" }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "ops",
+          "thresholds": {
+            "steps": [
+              { "color": "#73BF69", "value": 0 }
+            ]
+          }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "area", "colorMode": "background", "textMode": "auto" }
+    },
+    {
+      "title": "Error Rate",
+      "description": "Reconciliation errors per second across all controllers",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(corium_reconcile_errors_total[5m]))", "legendFormat": "errors/s" }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "ops",
+          "decimals": 3,
+          "thresholds": {
+            "steps": [
+              { "color": "#73BF69", "value": 0 },
+              { "color": "#FFAA00", "value": 0.01 },
+              { "color": "#FF4444", "value": 0.1 }
+            ]
+          }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "area", "colorMode": "background", "textMode": "auto" }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 200,
+      "title": "Pod Discovery & Collection",
+      "type": "row"
+    },
+    {
+      "title": "Discovered Pods by Collector",
+      "description": "Number of pods each CoriumMonitorCollector is watching, broken down by collector name",
+      "type": "bargauge",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "corium_discovered_pods", "legendFormat": "{{collector}}" }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "#FF4444", "value": 0 },
+              { "color": "#FFAA00", "value": 1 },
+              { "color": "#73BF69", "value": 3 }
+            ]
+          },
+          "min": 0
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "displayMode": "gradient", "orientation": "horizontal", "showUnfilled": true }
+    },
+    {
+      "title": "Discovered Pods Over Time",
+      "description": "Historical view of pod count per collector — shows scaling events and pod churn",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "corium_discovered_pods", "legendFormat": "{{collector}}" }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 25, "lineWidth": 2, "pointSize": 5, "spanNulls": false, "drawStyle": "line", "lineInterpolation": "smooth", "showPoints": "auto" },
+          "min": 0
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "min", "max"] }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 300,
+      "title": "Alerting",
+      "type": "row"
+    },
+    {
+      "title": "Active Alerts by Resource",
+      "description": "Currently firing alerts per CoriumMonitorAlert — 0 is healthy (green), >0 means rules are triggering",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "corium_active_alerts", "legendFormat": "{{alert}}" }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "#73BF69", "value": 0 },
+              { "color": "#FFAA00", "value": 1 },
+              { "color": "#FF4444", "value": 3 }
+            ]
+          },
+          "max": 10,
+          "min": 0
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": false, "showThresholdMarkers": true }
+    },
+    {
+      "title": "Alert Firing History",
+      "description": "Tracks active alert count over time — spikes indicate firing rules, drops indicate resolution",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "corium_active_alerts", "legendFormat": "{{alert}}" }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 30, "lineWidth": 2, "drawStyle": "line", "lineInterpolation": "stepAfter", "showPoints": "auto", "pointSize": 5 },
+          "min": 0
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "id": 400,
+      "title": "Reconciliation Performance",
+      "type": "row"
+    },
+    {
+      "title": "Reconciliation Errors by Controller",
+      "description": "Rate of reconcile errors per controller type (config/collector/alert) — should be near zero in healthy operation",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rate(corium_reconcile_errors_total[5m])", "legendFormat": "{{controller}}" }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 15, "lineWidth": 2, "drawStyle": "line", "lineInterpolation": "smooth" },
+          "unit": "ops",
+          "min": 0
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "title": "Reconcile Success Rate",
+      "description": "Percentage of reconciliations completing without error — target is 100%",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "rate(jaxstats_reconcile_errors_total[5m])",
+          "expr": "100 * (1 - (sum by (controller) (rate(controller_runtime_reconcile_errors_total{namespace=\"operator-system\"}[5m])) / sum by (controller) (rate(controller_runtime_reconcile_total{namespace=\"operator-system\"}[5m]))))",
           "legendFormat": "{{controller}}"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": { "fillOpacity": 10, "lineWidth": 2 }
-        }
-      }
-    },
-    {
-      "title": "Discovered Pods by Collector",
-      "type": "stat",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "jaxstats_discovered_pods",
-          "legendFormat": "{{collector}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
+          "custom": { "fillOpacity": 10, "lineWidth": 2, "drawStyle": "line", "lineInterpolation": "smooth" },
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
           "thresholds": {
+            "mode": "absolute",
             "steps": [
-              { "color": "red", "value": 0 },
-              { "color": "yellow", "value": 1 },
-              { "color": "green", "value": 3 }
+              { "color": "#FF4444", "value": 0 },
+              { "color": "#FFAA00", "value": 95 },
+              { "color": "#73BF69", "value": 99 }
             ]
           }
         }
-      }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "min"] }, "tooltip": { "mode": "multi" } }
     },
     {
-      "title": "Active Alerts by Alert Resource",
-      "type": "gauge",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "jaxstats_active_alerts",
-          "legendFormat": "{{alert}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "steps": [
-              { "color": "green", "value": 0 },
-              { "color": "yellow", "value": 1 },
-              { "color": "red", "value": 3 }
-            ]
-          },
-          "max": 10
-        }
-      }
-    },
-    {
-      "title": "Discovered Pods Over Time",
+      "title": "Reconcile Duration (p50 / p99)",
+      "description": "How long each controller takes to reconcile — p50 is typical, p99 is worst-case",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "jaxstats_discovered_pods",
-          "legendFormat": "{{collector}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "fillOpacity": 20, "lineWidth": 2 }
-        }
-      }
-    },
-    {
-      "title": "Controller Work Queue Depth",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
+          "expr": "histogram_quantile(0.50, rate(controller_runtime_reconcile_time_seconds_bucket{namespace=\"operator-system\"}[5m]))",
+          "legendFormat": "{{controller}} p50"
+        },
         {
-          "expr": "workqueue_depth{namespace=\"corium-operator-system\"}",
-          "legendFormat": "{{name}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "fillOpacity": 10, "lineWidth": 2 }
-        }
-      }
-    },
-    {
-      "title": "Controller Reconcile Duration (p99)",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.99, rate(controller_runtime_reconcile_time_seconds_bucket{namespace=\"corium-operator-system\"}[5m]))",
+          "expr": "histogram_quantile(0.99, rate(controller_runtime_reconcile_time_seconds_bucket{namespace=\"operator-system\"}[5m]))",
           "legendFormat": "{{controller}} p99"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "unit": "s",
-          "custom": { "fillOpacity": 10, "lineWidth": 2 }
+          "custom": { "fillOpacity": 10, "lineWidth": 2, "drawStyle": "line", "lineInterpolation": "smooth" },
+          "unit": "s"
         }
-      }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "title": "Controller Work Queue Depth",
+      "description": "Items waiting to be reconciled — sustained depth >0 means the controller is falling behind",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "workqueue_depth{namespace=\"operator-system\"}", "legendFormat": "{{name}}" }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 15, "lineWidth": 2, "drawStyle": "line", "lineInterpolation": "smooth" },
+          "min": 0
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
+      "id": 500,
+      "title": "Controller Runtime",
+      "type": "row"
+    },
+    {
+      "title": "Reconciliations per Second by Controller",
+      "description": "Throughput of each controller — higher during scaling events or after CRD changes",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 41 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (controller) (rate(controller_runtime_reconcile_total{namespace=\"operator-system\"}[5m]))",
+          "legendFormat": "{{controller}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 20, "lineWidth": 2, "drawStyle": "bars", "lineInterpolation": "smooth" },
+          "unit": "ops"
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean"] }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "title": "Work Queue Latency (p99)",
+      "description": "Time items spend waiting in the work queue before being reconciled",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 41 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, rate(workqueue_queue_duration_seconds_bucket{namespace=\"operator-system\"}[5m]))",
+          "legendFormat": "{{name}} p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 10, "lineWidth": 2, "drawStyle": "line", "lineInterpolation": "smooth" },
+          "unit": "s"
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }, "tooltip": { "mode": "multi" } }
     }
   ],
   "schemaVersion": 39,
-  "tags": ["corium", "operator", "jaxstats"],
+  "tags": ["corium", "operator", "monitoring", "kubernetes"],
   "templating": { "list": [] },
   "time": { "from": "now-1h", "to": "now" },
-  "timepicker": {},
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+  },
   "timezone": "browser",
   "title": "Corium Operator Dashboard",
   "uid": "corium-operator",
-  "version": 1
+  "version": 2
 }

@@ -1,6 +1,6 @@
 ## Append samples of your project ##
 resources:
-- stats_v1alpha1_jaxstatsconfig.yaml
-- stats_v1alpha1_jaxstatscollector.yaml
-- stats_v1alpha1_jaxstatsalert.yaml
+- monitor_v1alpha1_coriummonitorconfig.yaml
+- monitor_v1alpha1_coriummonitorcollector.yaml
+- monitor_v1alpha1_coriummonitoralert.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

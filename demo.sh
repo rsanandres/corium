@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Corium Operator Demo
-# One-command demo: KinD cluster, operator, demo workloads, sample CRs
+# One-command demo: KinD cluster, operator, monitoring stack, sample CRs
 
 CLUSTER_NAME="corium-demo"
 OPERATOR_IMG="corium-operator:demo"
@@ -48,54 +48,63 @@ echo ">>> Creating namespaces and network policies..."
 kubectl apply -f "$SCRIPT_DIR/k8s/namespaces.yaml"
 kubectl apply -f "$SCRIPT_DIR/k8s/network-policies.yaml"
 
+# Build and load main app image (resume dashboard)
+echo ">>> Building main app image..."
+cd "$SCRIPT_DIR"
+docker build -t corium:latest .
+kind load docker-image corium:latest --name "$CLUSTER_NAME"
+
+# Deploy main app (resume dashboard pods)
+echo ">>> Deploying main app to corium-workloads..."
+kubectl apply -f "$SCRIPT_DIR/k8s/deployment.yaml"
+kubectl apply -f "$SCRIPT_DIR/k8s/service.yaml"
+
 # Run operator locally in background (for demo simplicity)
 echo ">>> Starting operator (background)..."
+cd "$SCRIPT_DIR/operator"
 make run &
 OPERATOR_PID=$!
 
 # Give operator time to start
 sleep 5
 
-# Deploy demo workload
-echo ">>> Deploying demo workload (3x nginx pods)..."
-kubectl apply -f config/samples/demo-workload.yaml
-
-# Wait for pods to be ready
-echo ">>> Waiting for demo pods..."
-kubectl wait --for=condition=ready pod -l app=demo-workload --timeout=60s || true
+# Wait for app pods to be ready
+echo ">>> Waiting for app pods..."
+kubectl wait --for=condition=ready pod -l app=corium -n corium-workloads --timeout=120s || true
 
 # Apply sample CRs
-echo ">>> Applying sample JAXStats resources..."
-kubectl apply -f config/samples/stats_v1alpha1_jaxstatsconfig.yaml
-kubectl apply -f config/samples/stats_v1alpha1_jaxstatscollector.yaml
-kubectl apply -f config/samples/stats_v1alpha1_jaxstatsalert.yaml
+echo ">>> Applying sample CoriumMonitor resources..."
+kubectl apply -f config/samples/monitor_v1alpha1_coriummonitorconfig.yaml
+kubectl apply -f config/samples/monitor_v1alpha1_coriummonitorcollector.yaml
+kubectl apply -f config/samples/monitor_v1alpha1_coriummonitoralert.yaml
 
 # Wait for reconciliation
-echo ">>> Waiting for reconciliation (10s)..."
-sleep 10
+echo ">>> Waiting for reconciliation (15s)..."
+sleep 15
 
 # Show results
 echo ""
 echo "=== Results ==="
 echo ""
 
-echo "--- JAXStatsConfig ---"
-kubectl get jaxstatsconfigs -o wide 2>/dev/null || kubectl get jaxstatsconfigs
+echo "--- CoriumMonitorConfig ---"
+kubectl get coriummonitorconfigs -o wide 2>/dev/null || kubectl get cmc
 echo ""
 
-echo "--- JAXStatsCollector ---"
-kubectl get jaxstatscollectors -o wide 2>/dev/null || kubectl get jaxstatscollectors
+echo "--- CoriumMonitorCollector ---"
+kubectl get coriummonitorcollectors -o wide 2>/dev/null || kubectl get cmcol
 echo ""
 
-echo "--- JAXStatsAlert ---"
-kubectl get jaxstatsalerts -o wide 2>/dev/null || kubectl get jaxstatsalerts
+echo "--- CoriumMonitorAlert ---"
+kubectl get coriummonitoralerts -o wide 2>/dev/null || kubectl get cma
 echo ""
 
 echo "--- Metrics ConfigMap ---"
-kubectl get configmap -l app.kubernetes.io/managed-by=jaxstats-operator
+kubectl get configmap -l app.kubernetes.io/managed-by=corium-operator -n corium-workloads 2>/dev/null || \
+  kubectl get configmap -l app.kubernetes.io/managed-by=corium-operator
 echo ""
 
-CMNAME=$(kubectl get configmap -l app.kubernetes.io/managed-by=jaxstats-operator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+CMNAME=$(kubectl get configmap -l app.kubernetes.io/managed-by=corium-operator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
 if [ -n "$CMNAME" ]; then
   echo "--- ConfigMap Contents (metrics.json) ---"
   kubectl get configmap "$CMNAME" -o jsonpath='{.data.metrics\.json}' | python3 -m json.tool 2>/dev/null || \
@@ -119,7 +128,7 @@ echo "To stop: kill $OPERATOR_PID"
 echo "To clean up: kind delete cluster --name $CLUSTER_NAME"
 echo ""
 echo "Try:"
-echo "  kubectl get jsc,jscol,jsa"
-echo "  kubectl describe jaxstatsalert demo-alert"
+echo "  kubectl get cmc,cmcol,cma"
+echo "  kubectl describe coriummonitoralert demo-alert"
 echo "  kubectl get configmap demo-collector-metrics -o yaml"
 echo "  kubectl get events --field-selector reason=AlertFiring"

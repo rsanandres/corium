@@ -1,0 +1,16 @@
+apiVersion: monitor.corium.io/v1alpha1
+kind: CoriumMonitorCollector
+metadata:
+  name: demo-collector
+spec:
+  targetNamespace: "corium-workloads"
+  configRef: "corium-sample"
+  metrics:
+    - "restart_count"
+    - "not_ready_count"
+  resourceTypes:
+    - "pods"
+  selector:
+    matchLabels:
+      app: corium
+  collectionSchedule: "*/1 * * * *"

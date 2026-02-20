@@ -14,8 +14,8 @@ resources:
     namespaced: true
   controller: true
   domain: corium.io
-  group: stats
-  kind: JAXStatsConfig
+  group: monitor
+  kind: CoriumMonitorConfig
   path: github.com/raph/corium/operator/api/v1alpha1
   version: v1alpha1
 - api:
@@ -23,8 +23,8 @@ resources:
     namespaced: true
   controller: true
   domain: corium.io
-  group: stats
-  kind: JAXStatsCollector
+  group: monitor
+  kind: CoriumMonitorCollector
   path: github.com/raph/corium/operator/api/v1alpha1
   version: v1alpha1
 - api:
@@ -32,8 +32,8 @@ resources:
     namespaced: true
   controller: true
   domain: corium.io
-  group: stats
-  kind: JAXStatsAlert
+  group: monitor
+  kind: CoriumMonitorAlert
   path: github.com/raph/corium/operator/api/v1alpha1
   version: v1alpha1
 version: "3"

@@ -2,9 +2,9 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/stats.corium.io_jaxstatsconfigs.yaml
-- bases/stats.corium.io_jaxstatscollectors.yaml
-- bases/stats.corium.io_jaxstatsalerts.yaml
+- bases/monitor.corium.io_coriummonitorconfigs.yaml
+- bases/monitor.corium.io_coriummonitorcollectors.yaml
+- bases/monitor.corium.io_coriummonitoralerts.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

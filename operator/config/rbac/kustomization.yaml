@@ -22,13 +22,13 @@ resources:
 # default, aiding admins in cluster management. Those roles are
 # not used by the operator itself. You can comment the following lines
 # if you do not want those helpers be installed with your Project.
-- jaxstatsalert_admin_role.yaml
-- jaxstatsalert_editor_role.yaml
-- jaxstatsalert_viewer_role.yaml
-- jaxstatscollector_admin_role.yaml
-- jaxstatscollector_editor_role.yaml
-- jaxstatscollector_viewer_role.yaml
-- jaxstatsconfig_admin_role.yaml
-- jaxstatsconfig_editor_role.yaml
-- jaxstatsconfig_viewer_role.yaml
+- coriummonitoralert_admin_role.yaml
+- coriummonitoralert_editor_role.yaml
+- coriummonitoralert_viewer_role.yaml
+- coriummonitorcollector_admin_role.yaml
+- coriummonitorcollector_editor_role.yaml
+- coriummonitorcollector_viewer_role.yaml
+- coriummonitorconfig_admin_role.yaml
+- coriummonitorconfig_editor_role.yaml
+- coriummonitorconfig_viewer_role.yaml
 

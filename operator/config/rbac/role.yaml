@@ -32,11 +32,11 @@ rules:
   - list
   - watch
 - apiGroups:
-  - stats.corium.io
+  - monitor.corium.io
   resources:
-  - jaxstatsalerts
-  - jaxstatscollectors
-  - jaxstatsconfigs
+  - coriummonitoralerts
+  - coriummonitorcollectors
+  - coriummonitorconfigs
   verbs:
   - create
   - delete
@@ -46,19 +46,19 @@ rules:
   - update
   - watch
 - apiGroups:
-  - stats.corium.io
+  - monitor.corium.io
   resources:
-  - jaxstatsalerts/finalizers
-  - jaxstatscollectors/finalizers
-  - jaxstatsconfigs/finalizers
+  - coriummonitoralerts/finalizers
+  - coriummonitorcollectors/finalizers
+  - coriummonitorconfigs/finalizers
   verbs:
   - update
 - apiGroups:
-  - stats.corium.io
+  - monitor.corium.io
   resources:
-  - jaxstatsalerts/status
-  - jaxstatscollectors/status
-  - jaxstatsconfigs/status
+  - coriummonitoralerts/status
+  - coriummonitorcollectors/status
+  - coriummonitorconfigs/status
   verbs:
   - get
   - patch

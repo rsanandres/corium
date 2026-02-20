@@ -1,0 +1,13 @@
+apiVersion: monitor.corium.io/v1alpha1
+kind: CoriumMonitorConfig
+metadata:
+  name: corium-sample
+spec:
+  enabled: true
+  collectionInterval: 30
+  metrics:
+    - "restart_count"
+    - "not_ready_count"
+    - "pod_count"
+  storageConfig:
+    type: "configmap"

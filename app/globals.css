@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased bg-surface text-text-primary;
+  }
+
+  .dark body,
+  body.dark-body {
+    background-color: #111113;
+    color: #e5e5ea;
+  }
+}
+
+@layer components {
+  .container-main {
+    @apply px-6 sm:px-[6vw] lg:px-[10vw] xl:px-[14vw];
+  }
+}
+
+/* Scroll reveal animation */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Selection styling */
+::selection {
+  @apply bg-accent/20;
+}
+
+.dark ::selection {
+  @apply bg-accent/30;
+}
+
+/* Focus styles */
+:focus-visible {
+  @apply outline-none ring-2 ring-accent ring-offset-2;
+}
+
+.dark :focus-visible {
+  ring-offset-color: #111113;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #2c2c30;
+}

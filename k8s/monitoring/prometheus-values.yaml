@@ -20,7 +20,7 @@ prometheus:
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorNamespaceSelector:
       matchLabels:
-        name: corium-operator-system
+        kubernetes.io/metadata.name: operator-system
     resources:
       requests:
         memory: 256Mi
